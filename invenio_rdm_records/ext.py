@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019-2023 CERN.
+# Copyright (C) 2019-2024 CERN.
 # Copyright (C) 2019-2021 Northwestern University.
 # Copyright (C) 2022 Universität Hamburg.
 # Copyright (C) 2023-2024 Graz University of Technology.
@@ -26,6 +26,7 @@ from .resources import (
     RDMCommunityRecordsResource,
     RDMCommunityRecordsResourceConfig,
     RDMDraftFilesResourceConfig,
+    RDMGrantGroupAccessResourceConfig,
     RDMGrantsAccessResource,
     RDMGrantUserAccessResourceConfig,
     RDMParentGrantsResource,
@@ -116,6 +117,8 @@ class InvenioRDMRecords(object):
                 k in supported_configurations
                 or k.startswith("RDM_")
                 or k.startswith("DATACITE_")
+                # TODO: This can likely be moved to a separate module
+                or k.startswith("IIIF_TILES_")
             ):
                 app.config.setdefault(k, getattr(config, k))
 
@@ -228,6 +231,11 @@ class InvenioRDMRecords(object):
         self.grant_user_access_resource = RDMGrantsAccessResource(
             service=self.records_service,
             config=RDMGrantUserAccessResourceConfig.build(app),
+        )
+
+        self.grant_group_access_resource = RDMGrantsAccessResource(
+            service=self.records_service,
+            config=RDMGrantGroupAccessResourceConfig.build(app),
         )
 
         # Record's communities

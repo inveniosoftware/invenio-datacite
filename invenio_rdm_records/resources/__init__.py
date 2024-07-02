@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020 CERN.
+# Copyright (C) 2020-2024 CERN.
 # Copyright (C) 2022 Universität Hamburg.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
@@ -9,9 +9,9 @@
 """Invenio RDM module to create REST APIs."""
 
 from .config import (
-    IIIFResourceConfig,
     RDMCommunityRecordsResourceConfig,
     RDMDraftFilesResourceConfig,
+    RDMGrantGroupAccessResourceConfig,
     RDMGrantUserAccessResourceConfig,
     RDMParentGrantsResourceConfig,
     RDMParentRecordLinksResourceConfig,
@@ -20,8 +20,8 @@ from .config import (
     RDMRecordRequestsResourceConfig,
     RDMRecordResourceConfig,
 )
+from .iiif import IIIFResource, IIIFResourceConfig
 from .resources import (
-    IIIFResource,
     RDMCommunityRecordsResource,
     RDMGrantsAccessResource,
     RDMParentGrantsResource,
@@ -40,6 +40,7 @@ __all__ = (
     "RDMGrantsAccessResource",
     "RDMParentGrantsResourceConfig",
     "RDMGrantUserAccessResourceConfig",
+    "RDMGrantGroupAccessResourceConfig",
     "RDMParentRecordLinksResource",
     "RDMParentRecordLinksResourceConfig",
     "RDMRecordCommunitiesResourceConfig",

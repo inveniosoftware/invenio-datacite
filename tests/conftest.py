@@ -35,7 +35,7 @@ except AttributeError:
 
 from collections import namedtuple
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from unittest import mock
 
@@ -369,6 +369,8 @@ def app_config(app_config, mock_datacite_client):
         "record_file_download": "/records/<pid_value>/files/<path:filename>",
     }
 
+    app_config["USERS_RESOURCES_GROUPS_ENABLED"] = True
+
     return app_config
 
 
@@ -548,7 +550,9 @@ def full_record(users):
             ],
             "references": [
                 {
-                    "reference": "0000 0001 1456 7559",
+                    "reference": "Nielsen et al,..",
+                    "identifier": "0000 0001 1456 7559",
+                    "scheme": "isni",
                 }
             ],
         },
@@ -1700,6 +1704,33 @@ def admin_role_need(db):
 
 
 @pytest.fixture()
+def embargoed_files_record(running_app, minimal_record, superuser_identity):
+    """Embargoed files record."""
+    service = current_rdm_records_service
+    today = arrow.utcnow().date().isoformat()
+
+    # Add embargo to record
+    with mock.patch("arrow.utcnow") as mock_arrow:
+        minimal_record["access"]["files"] = "restricted"
+        minimal_record["access"]["status"] = "embargoed"
+        minimal_record["access"]["embargo"] = dict(
+            active=True, until=today, reason=None
+        )
+
+        # We need to set the current date in the past to pass the validations
+        mock_arrow.return_value = arrow.get(datetime(1954, 9, 29), tz.gettz("UTC"))
+        draft = service.create(superuser_identity, minimal_record)
+        record = service.publish(id_=draft.id, identity=superuser_identity)
+
+        RDMRecord.index.refresh()
+
+        # Recover current date
+        mock_arrow.return_value = arrow.get(datetime.utcnow())
+
+    return record
+
+
+@pytest.fixture()
 def embargoed_record(running_app, minimal_record, superuser_identity):
     """Embargoed record."""
     service = current_rdm_records_service
@@ -1707,7 +1738,7 @@ def embargoed_record(running_app, minimal_record, superuser_identity):
 
     # Add embargo to record
     with mock.patch("arrow.utcnow") as mock_arrow:
-        minimal_record["access"]["files"] = "restricted"
+        minimal_record["access"]["record"] = "restricted"
         minimal_record["access"]["status"] = "embargoed"
         minimal_record["access"]["embargo"] = dict(
             active=True, until=today, reason=None
