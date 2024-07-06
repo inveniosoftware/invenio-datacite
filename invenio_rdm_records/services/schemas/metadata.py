@@ -364,7 +364,7 @@ class MetadataSchema(Schema):
     )
     title = SanitizedUnicode(
         required=True, 
-        validate=validate._not_blank(_("Title cannot be a blank string."))
+        validate=_not_blank(_("Title cannot be a blank string."))
     )
     additional_titles = fields.List(fields.Nested(TitleSchema))
     publisher = SanitizedUnicode()
