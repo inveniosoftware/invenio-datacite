@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2023-2024 CERN.
+# Copyright (C) 2024 Graz University of Technology.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """RDM Record Communities Service."""
+
 from flask import current_app
 from invenio_access.permissions import system_identity
 from invenio_communities.proxies import current_communities
@@ -40,6 +42,7 @@ from ..errors import (
     InvalidAccessRestrictions,
     OpenRequestAlreadyExists,
     RecordCommunityMissing,
+    RecordSubmissionClosedCommunityError,
 )
 
 
@@ -152,6 +155,19 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
                 "community_id": community_id,
             }
             try:
+                can_submit_record = (
+                    current_communities.service.config.permission_policy_cls(
+                        "submit_record",
+                        community_id=community_id,
+                        record=current_communities.service.record_cls.pid.resolve(
+                            community_id
+                        ),
+                    ).allows(identity)
+                )
+
+                if not can_submit_record:
+                    raise RecordSubmissionClosedCommunityError()
+
                 request_item = self._include(
                     identity, community_id, comment, require_review, record, uow
                 )
@@ -175,6 +191,9 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
                 PermissionDeniedError,
             ) as ex:
                 result["message"] = ex.description
+                errors.append(result)
+            except RecordSubmissionClosedCommunityError as e:
+                result["message"] = e.description
                 errors.append(result)
 
         uow.register(IndexRefreshOp(indexer=self.indexer))
@@ -345,10 +364,9 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
             },
             raise_errors=True,
         )
-
         record = self.record_cls.pid.resolve(id_)
         self.require_permission(identity, "manage", record=record)
-        record.parent.communities.default = valid_data["default"]
+        record.parent.communities.default = valid_data["default"]["id"]
 
         uow.register(
             ParentRecordCommitOp(

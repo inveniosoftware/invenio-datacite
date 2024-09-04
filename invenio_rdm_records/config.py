@@ -559,6 +559,22 @@ RDM_RECORDS_MAX_FILES_COUNT = 100
 RDM_RECORDS_MAX_MEDIA_FILES_COUNT = 100
 """Max amount of media files allowed to upload in the deposit form."""
 
+RDM_MEDIA_FILES_DEFAULT_QUOTA_SIZE = 10 * (10**9)  # 10 GB
+"""Default size for a bucket in bytes for media files."""
+
+RDM_MEDIA_FILES_DEFAULT_MAX_FILE_SIZE = 10 * (10**9)  # 10 GB
+"""Default maximum file size for a bucket in bytes for media files."""
+
+# For backwards compatibility,
+# FILES_REST_DEFAULT_QUOTA_SIZE & FILES_REST_DEFAULT_MAX_FILE_SIZE
+# are used respectively instead
+RDM_FILES_DEFAULT_QUOTA_SIZE = None
+"""Default size for a bucket in bytes for files."""
+
+RDM_FILES_DEFAULT_MAX_FILE_SIZE = None
+"""Default maximum file size for a bucket in bytes for files."""
+
+
 RDM_DATACITE_FUNDER_IDENTIFIERS_PRIORITY = ("ror", "doi", "grid", "isni", "gnd")
 """Priority of funder identifiers types to be used for DataCite serialization."""
 
@@ -597,7 +613,12 @@ IIIF_TILES_STORAGE_BASE_PATH = "images/"
 Relative paths are resolved against the application instance path.
 """
 
-IIIF_TILES_CONVERTER_PARAMS = {}
+IIIF_TILES_CONVERTER_PARAMS = {
+    "compression": "jpeg",
+    "Q": 90,
+    "tile_width": 256,
+    "tile_height": 256,
+}
 """Parameters to be passed to the tiles converter."""
 
 RDM_RECORDS_RESTRICTION_GRACE_PERIOD = timedelta(days=30)
