@@ -2,6 +2,7 @@
 ..
     Copyright (C) 2019-2024 CERN.
     Copyright (C) 2019-2024 Northwestern University.
+    Copyright (C) 2024      KTH Royal Institute of Technology.
 
 
     Invenio-RDM-Records is free software; you can redistribute it and/or
@@ -10,6 +11,93 @@
 
 Changes
 =======
+
+Version v15.7.0 (released 2024-11-04)
+
+- resources: make record error handlers configurable
+    * Possible via the new `RDM_RECORDS_ERROR_HANDLERS` config variable.
+- components: make content moderation configurable
+    * Closes #1861.
+    * Adds a new `RRM_CONTENT_MODERATION_HANDLERS` config variable to allow
+      for configuring multiple handlers for the different write actions.
+- user_moderation: use search for faster actions
+    * Use search results to determine the user's list of records.
+    * Use a TaskOp and Unit of Work to avoid sending Celery tasks immediately.
+    * Add a cleanup task that will perform a more thorough check using the
+      DB to lookup the user's records.
+- deposit: add missing fields to record deserializer
+- UI/UX: add consistent suggestions display to affiliations
+- UI/UX: improve display of ROR information
+- collections: move records search into service
+- collections: added task to compute number of records for each collection
+- services: make file-service components configurable
+- access notification: provide correct draft preview link
+    * Closes inveniosoftware/invenio-app-rdm#2827
+
+Version v15.6.0 (released 2024-10-18)
+
+- community: added myCommunitiesEnabled prop to CommunitySelectionSearch
+
+Version v15.5.0 (released 2024-10-18)
+
+- community: added autofocus prop to CommunitySelectionSearch
+
+Version v15.4.0 (released 2024-10-17)
+
+- DOI: fix wrong parent DOI link
+- community: added props to make CommunitySelectionSearch reusable
+
+Version v15.3.0 (released 2024-10-16)
+
+- collections: display pages and REST API
+- deposit: add feature flag for required community submission flow
+- mappings: disable doc_values for geo_shape fields (#1807)
+    * Fixes multiple values for ``metadata.locaations.features``.
+
+Version v15.2.0 (released 2024-10-10)
+
+- webpack: update axios and react-searchkit(due to axios) major versions
+
+Version v15.1.0 (released 2024-10-10)
+
+- jobs: register embargo update job type
+- installation: upgrade invenio-jbs
+
+Version v15.0.0 (released 2024-10-08)
+
+- installation: bump invenio-communities
+- dumper: refactor and updated docstring
+- awards: added subjects and orgs, updated mappings
+- relations: added subject relation in awards
+
+Version v14.0.0 (released 2024-10-04)
+
+- installation: bump invenio-vocabularies & invenio-communities
+
+Version v13.0.0 (released 2024-10-03)
+
+- collections: added feature, containing core functionalities and DB models
+- ui: fixed propTypes warnings
+- dependencies: bump flask-iiif to >1.0.0
+
+Version v12.2.2 (released 2024-09-30)
+
+- Improve handling of draft PID in RecordCommunitiesService
+- Revert "deposit: check permission and set disable tooltip for publish button"
+- Remove DeprecationWarning for sqlalchemy
+- Add compatibility layer to move to flask>=3
+
+Version v12.2.1 (released 2024-09-19)
+
+- file upload: better handling of errors when uploading empty files
+- serializers: ensure that the vocab id is set before performing a look up
+- deposit: take into account the can_publish permission to control when the
+           Publish button should be enabled or disabled
+
+Version v12.1.1 (released 2024-09-11)
+
+- resource: fix add record to community
+- controls: refactored isDisabled function
 
 Version v12.1.0 (released 2024-08-30)
 
