@@ -22,68 +22,46 @@ from ..errors import ValidationErrorWithMessageAsList
 from ..pids.tasks import register_or_update_pid
 
 
+def _get_optional_doi_transitions(service, record):
+    """Reusable method to validate optional DOI."""
+    RDM_OPTIONAL_DOI_TRANSITIONS = current_app.config.get(
+        "RDM_OPTIONAL_DOI_TRANSITIONS", {}
+    )
+    previous_published = service.record_cls.get_latest_published_by_parent(
+        record.parent
+    )
+    if previous_published:
+        previous_published_pids = previous_published.get("pids", {})
+        previous_published_provider = previous_published_pids.get("doi", {}).get(
+            "provider", "not_needed"
+        )
+        return RDM_OPTIONAL_DOI_TRANSITIONS.get(previous_published_provider, {})
+    return {}
+
+
 class PIDsComponent(ServiceComponent):
     """Service component for PIDs."""
 
-    ALLOWED_DOI_PROVIDERS_TRANSITIONS = {
-        "datacite": {
-            "allowed_providers": ["datacite"],
-            "message": _(
-                "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
-            ),
-        },
-        "external": {
-            "allowed_providers": ["external", "not_needed"],
-            "message": _(
-                "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
-            ),
-        },
-        "not_needed": {
-            "allowed_providers": ["external", "not_needed"],
-            "message": _(
-                "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
-            ),
-        },
-    }
-
-    def _validate_doi_transition(
-        self, new_provider, previous_published_provider, errors=None
-    ):
-        """If DOI is not required then we validate allowed DOI providers.
-
-        Each new version that is published must follow the ALLOWED_DOI_PROVIDERS_TRANSITIONS.
-        """
-        sitename = current_app.config.get("THEME_SITENAME", "this repository")
+    def _validate_optional_doi(self, record, errors=None):
+        """.Validate optional DOI."""
         sitename = current_app.config.get("THEME_SITENAME", "this repository")
 
-        valid_transitions = self.ALLOWED_DOI_PROVIDERS_TRANSITIONS.get(
-            previous_published_provider, {}
-        )
-        if new_provider not in valid_transitions.get("allowed_providers", []):
+        doi_transitions = _get_optional_doi_transitions(self.service, record)
+        doi_pid = None
+        if record.pids:
+            doi_pid = [pid for pid in record.pids.values() if "doi" in record.pids]
+        new_provider = "not_needed" if not doi_pid else doi_pid[0]["provider"]
+        if doi_transitions and new_provider not in doi_transitions.get(
+            "allowed_providers", []
+        ):
             error_message = {
                 "field": "pids.doi",
-                "messages": [
-                    valid_transitions.get("message").format(sitename=sitename)
-                ],
+                "messages": [doi_transitions.get("message").format(sitename=sitename)],
             }
-
             if errors is not None:
                 errors.append(error_message)
             else:
                 raise ValidationErrorWithMessageAsList(message=[error_message])
-
-    def _validate_optional_doi(self, record, previous_published, errors=None):
-        """Reusable method to validate optional DOI."""
-        if previous_published:
-            previous_published_pids = previous_published.get("pids", {})
-            doi_pid = [pid for pid in record.pids.values() if "doi" in record.pids]
-            previous_published_provider = previous_published_pids.get("doi", {}).get(
-                "provider", "not_needed"
-            )
-            new_provider = "not_needed" if not doi_pid else doi_pid[0]["provider"]
-            self._validate_doi_transition(
-                new_provider, previous_published_provider, errors
-            )
 
     def create(self, identity, data=None, record=None, errors=None):
         """This method is called on draft creation.
@@ -110,10 +88,7 @@ class PIDsComponent(ServiceComponent):
         doi_required = "doi" in required_schemes
         can_manage_dois = self.service.check_permission(identity, "pid_manage")
         if not doi_required and not can_manage_dois:
-            previous_published = self.service.record_cls.get_latest_published_by_parent(
-                record.parent
-            )
-            self._validate_optional_doi(record, previous_published, errors)
+            self._validate_optional_doi(record, errors=errors)
 
         self.service.pids.pid_manager.validate(pids_data, record, errors)
         record.pids = pids_data
@@ -159,10 +134,7 @@ class PIDsComponent(ServiceComponent):
             if draft.parent.get("pids", {}).get("doi"):
                 required_schemes.add("doi")
 
-            previous_published = (
-                self.service.record_cls.get_previous_published_by_parent(record.parent)
-            )
-            self._validate_optional_doi(draft, previous_published)
+            self._validate_optional_doi(record)
 
         self.service.pids.pid_manager.validate(draft_pids, draft, raise_errors=True)
 
